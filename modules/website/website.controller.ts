@@ -3,7 +3,13 @@ import { db } from '../../db'
 import { ApiError } from '../../exceptions/api-error'
 import { HttpStatusCode } from '../../types'
 import { fetchWebsite } from '../../utils/fetch-website'
-import type { CreateWebsiteInput } from './website.schema'
+import type {
+	CreateWebsiteInput,
+	DeleteWebsiteInput,
+	GetWebsiteInput,
+	UpdateWebsiteInput,
+} from './website.schema'
+import { findWebsite } from './website.service'
 
 export const createWebsiteHandler = async (
 	req: Request<unknown, unknown, CreateWebsiteInput>,
@@ -59,6 +65,85 @@ export const createWebsiteHandler = async (
 			success: true,
 			message: 'Website created successfully',
 			data: website.rows.at(0),
+		})
+	} catch (error) {
+		next(error)
+	}
+}
+
+export const getWebsiteHandler = async (
+	req: Request<GetWebsiteInput>,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const { website_id } = req.params
+
+		const website = await findWebsite(website_id)
+		if (!website.rows.length) {
+			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
+		}
+
+		res.status(HttpStatusCode.OK).json({
+			success: true,
+			message: 'Website found successfully',
+			data: website.rows.at(0),
+		})
+	} catch (error) {
+		next(error)
+	}
+}
+
+export const updateWebsiteHandler = async (
+	req: Request<
+		UpdateWebsiteInput['params'],
+		unknown,
+		UpdateWebsiteInput['body']
+	>,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const { website_id } = req.params
+		const { name } = req.body
+
+		const websiteExists = await findWebsite(website_id)
+		if (!websiteExists.rows.length) {
+			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
+		}
+
+		const website = await db.query(
+			'UPDATE websites SET name = $1 WHERE id = $2 RETURNING *',
+			[name, website_id]
+		)
+
+		res.status(HttpStatusCode.OK).json({
+			success: true,
+			message: 'Website updated successfully',
+			data: website.rows.at(0),
+		})
+	} catch (error) {
+		next(error)
+	}
+}
+
+export const deleteWebsiteHandler = async (
+	req: Request<DeleteWebsiteInput>,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const { website_id } = req.params
+
+		const websiteExists = await findWebsite(website_id)
+		if (!websiteExists.rows.length) {
+			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
+		}
+
+		await db.query('DELETE FROM websites WHERE id = $1', [website_id])
+		return res.status(HttpStatusCode.OK).json({
+			success: true,
+			message: 'Website deleted successfully',
 		})
 	} catch (error) {
 		next(error)

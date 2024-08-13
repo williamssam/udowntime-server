@@ -5,7 +5,7 @@ import express from 'express'
 import { config } from './config'
 import { runDBMigrations } from './db'
 import errorHandler from './middlewares/error-handler'
-import routes from './routes'
+import router from './router'
 import { corsOptions } from './utils/cors-options'
 
 const app = express()
@@ -22,14 +22,14 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // TODO: handle route not found errors
-app.use(routes)
+app.use(router)
 app.use(errorHandler)
 
 // <-- SERVER STARTs -->
 app.listen(config.port, async () => {
 	try {
 		await runDBMigrations()
-		console.log(`Server started on port ${config.port}`)
+		console.log(`Server started on port http://localhost:${config.port}`)
 	} catch (error) {
 		console.error('Error connecting to database', error)
 	}

@@ -1,3 +1,5 @@
+// import { ApiError } from '../exceptions/api-error'
+
 import { ApiError } from '../exceptions/api-error'
 import { HttpStatusCode } from '../types'
 

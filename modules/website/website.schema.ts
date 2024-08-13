@@ -3,7 +3,7 @@ import { z } from 'zod'
 const payload = {
 	body: z.object({
 		name: z.string({
-			required_error: 'Title is required',
+			required_error: 'Website name is required',
 		}),
 		url: z
 			.string({
@@ -25,7 +25,9 @@ export const createWebsiteSchema = z.object({
 	...payload,
 })
 export const updateWebsiteSchema = z.object({
-	...payload,
+	body: z.object({
+		name: z.string({ required_error: 'Website name is required' }).trim(),
+	}),
 	...params,
 })
 export const deleteWebsiteSchema = z.object({
