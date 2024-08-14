@@ -5,7 +5,7 @@ import express from 'express'
 import { config } from './config'
 import { runDBMigrations } from './db'
 import errorHandler from './middlewares/error-handler'
-import router from './router'
+import routes from './routes'
 import { corsOptions } from './utils/cors-options'
 
 const app = express()
@@ -22,7 +22,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // TODO: handle route not found errors
-app.use(router)
+app.use(routes())
 app.use(errorHandler)
 
 // <-- SERVER STARTs -->

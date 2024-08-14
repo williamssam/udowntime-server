@@ -1,0 +1,1 @@
+- use <code>node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</code> to generate key for either access token or refresh token

@@ -3,9 +3,7 @@ import { config } from '../config'
 
 export const signAccessJWT = (payload: Object) => {
 	try {
-		const key = Buffer.from(config.access_token.key, 'base64').toString('ascii')
-		return jwt.sign(payload, key, {
-			algorithm: 'RS256',
+		return jwt.sign(payload, config.access_token.key, {
 			expiresIn: config.access_token.expires_in,
 		})
 	} catch (error) {
@@ -16,9 +14,7 @@ export const signAccessJWT = (payload: Object) => {
 // might include refresh token in the future
 export const signRefreshJWT = (payload: Object) => {
 	try {
-		const key = Buffer.from(config.refresh_token.key, 'base64').toString('ascii')
-		return jwt.sign(payload, key, {
-			algorithm: 'RS256',
+		return jwt.sign(payload, config.refresh_token.key, {
 			expiresIn: config.refresh_token.expires_in,
 		})
 	} catch (error) {
@@ -28,8 +24,7 @@ export const signRefreshJWT = (payload: Object) => {
 
 export const verifyAccessJWT = async (token: string, options?: jwt.VerifyOptions) => {
 	try {
-		const key = Buffer.from(config.access_token.key, 'base64').toString('ascii')
-		const decoded = jwt.verify(token, key, options)
+		const decoded = jwt.verify(token, config.access_token.key, options)
 
 		return {
 			is_valid: true,
@@ -45,8 +40,7 @@ export const verifyAccessJWT = async (token: string, options?: jwt.VerifyOptions
 
 export const verifyRefreshJWT = async (token: string, options?: jwt.VerifyOptions) => {
 	try {
-		const key = Buffer.from(config.refresh_token.key, 'base64').toString('ascii')
-		const decoded = jwt.verify(token, key, options)
+		const decoded = jwt.verify(token, config.refresh_token.key, options)
 
 		return {
 			is_valid: true,

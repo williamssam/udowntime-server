@@ -1,0 +1,5 @@
+refresh token stuff
+ - in refresh handler, check if the "is_valid" property from session table is true, then allow the user refresh their token and it is not i.e they have logout or login back (which will generate a new refresh token), inform them that their token has expired
+ - if refresh token has expired, update "is_valid" to false
+
+

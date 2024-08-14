@@ -26,6 +26,6 @@ export const validateResource =
 				})
 			}
 
-			return res.status(HttpStatusCode.INTERNAL_SERVER).send(error.errors)
+			return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).send(error.errors)
 		}
 	}

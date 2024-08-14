@@ -1,5 +1,7 @@
 import express from 'express'
 import { config } from './config'
+import userRoutes from './modules/user/user.routes'
+import websiteRoutes from './modules/website/website.routes'
 
 const router = express.Router()
 
@@ -12,9 +14,8 @@ export default () => {
 		}
 	})
 
-	// userRoutes(router)
-	// sessionRoutes(router)
-	// websiteRoutes(router)
+	userRoutes(router)
+	websiteRoutes(router)
 
 	return router
 }

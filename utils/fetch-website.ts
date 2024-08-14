@@ -1,14 +1,25 @@
-export const fetchWebsite = async (url: string) => {
-	const now = Date.now()
-	const resp = await fetch(url, {
-		method: 'GET',
-	})
-	const response_time = Date.now() - now
+import { ApiError } from '../exceptions/api-error'
+import { HttpStatusCode } from '../types'
 
-	return {
-		status: resp.ok ? 'available' : 'unavailable',
-		response_time: response_time,
-		status_code: resp.status,
+export const fetchWebsite = async (url: string) => {
+	try {
+		const now = Date.now()
+		const resp = await fetch(url, {
+			method: 'GET',
+		})
+		const response_time = Date.now() - now
+
+		return {
+			ok: resp.ok,
+			status: resp.ok ? 'available' : 'unavailable',
+			response_time: response_time,
+			status_code: resp.status,
+		}
+	} catch (error) {
+		throw new ApiError(
+			'Failed to fetch website',
+			HttpStatusCode.INTERNAL_SERVER_ERROR
+		)
 	}
 }
 

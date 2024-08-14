@@ -13,8 +13,9 @@ export const deserializeUser = async (
 ) => {
 	try {
 		const access_token =
-			req.cookies['udowntime-access-token'] ||
+			req.cookies['udowntime-access-token'] ??
 			req.headers.authorization?.split(' ')[1]
+		const refresh_token = req.cookies['udowntime-refresh-token']
 
 		if (!access_token) {
 			throw new ApiError(

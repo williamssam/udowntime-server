@@ -11,10 +11,10 @@ export const hashPassword = async (password: string) => {
 }
 
 export const verifyHashedPassword = async (
-	password: string,
+	user_password: string,
 	password_hash: string
 ) => {
-	return await verify(password_hash, password, {
+	return await verify(password_hash, user_password, {
 		memoryCost: 19456,
 		timeCost: 2,
 		outputLen: 32,

@@ -5,7 +5,7 @@ import { IS_DEV } from '../utils/constant'
 
 const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
 	if (!(err instanceof CustomError)) {
-		return res.status(HttpStatusCode.INTERNAL_SERVER).json({
+		return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
 			message: 'Internal Server error. Something went wrong',
 			success: false,
 			...(IS_DEV && { stack: err.stack }),

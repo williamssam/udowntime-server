@@ -1,12 +1,22 @@
 import type express from 'express'
 import { config } from '../../config'
+import { deserializeUser } from '../../middlewares/deserialize-user'
+import { requireUser } from '../../middlewares/require-user'
 import { validateResource } from '../../middlewares/validate-resource'
 import {
 	changePasswordHandler,
 	createUserHandler,
 	getCurrentUserHandler,
+	loginHandler,
+	logoutHandler,
+	refreshTokenHandler,
 } from './user.controller'
-import { changePasswordSchema, createUserSchema } from './user.schema'
+import {
+	changePasswordSchema,
+	createUserSchema,
+	loginSchema,
+	refreshTokenSchema,
+} from './user.schema'
 
 export default (router: express.Router) => {
 	router.post(
@@ -23,5 +33,25 @@ export default (router: express.Router) => {
 	)
 
 	// authenticated user
-	router.get(`${config.api_url_prefix}/auth/user`, getCurrentUserHandler)
+	router.get(
+		`${config.api_url_prefix}/me`,
+		[deserializeUser, requireUser],
+		getCurrentUserHandler
+	)
+
+	router.post(
+		`${config.api_url_prefix}/auth/login`,
+		[validateResource(loginSchema)],
+		loginHandler
+	)
+
+	// refresh token
+	router.get(
+		`${config.api_url_prefix}/auth/refresh`,
+		[validateResource(refreshTokenSchema)],
+		refreshTokenHandler
+	)
+
+	// logout user
+	router.post(`${config.api_url_prefix}/auth/logout`, logoutHandler)
 }

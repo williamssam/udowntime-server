@@ -6,8 +6,10 @@ import { fetchWebsite } from '../../utils/fetch-website'
 import type {
 	CreateWebsiteInput,
 	DeleteWebsiteInput,
+	GetAllWebsitesInput,
 	GetWebsiteInput,
 	UpdateWebsiteInput,
+	UpdateWebsiteStatusInput,
 } from './website.schema'
 import { findWebsite } from './website.service'
 
@@ -17,8 +19,8 @@ export const createWebsiteHandler = async (
 	next: NextFunction
 ) => {
 	try {
-		const { user_id } = req.query
-		const { name, url } = req.body
+		const { user } = res.locals.user
+		const { name, url, is_monitored } = req.body
 
 		const urlExists = await db.query(
 			'SELECT url FROM websites WHERE url = $1',
@@ -31,35 +33,42 @@ export const createWebsiteHandler = async (
 			)
 		}
 
-		// visit website
 		const resp = await fetchWebsite(url)
 
-		const uptime = resp.status === 'available' ? 1 : 0
-		const downtime = resp.status === 'available' ? 0 : 1
-		const availability = (uptime / (uptime + downtime)) * 100
+		const uptime = is_monitored && resp.ok ? 1 : 0
+		const downtime = is_monitored && !resp.ok ? 1 : 0
+		const availability = is_monitored ? (uptime / (uptime + downtime)) * 100 : 0
+		const status = is_monitored ? 'monitored' : 'not-monitored'
 
-		// Calculate average response time
+		// FIXME: Calculate average response time
 		const average_response_time = 0
-		const last_check = Date.now()
 
 		const website = await db.query(
-			'INSERT INTO websites (name, url, status, uptime, downtime, availability, last_check, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+			'INSERT INTO websites (name, url, status, uptime, downtime, availability, average_response_time, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
 			[
 				name,
 				url,
-				resp.status,
+				status,
 				uptime,
 				downtime,
 				availability,
-				last_check,
-				user_id,
+				average_response_time,
+				user.id,
 			]
 		)
 
-		await db.query(
-			'INSERT INTO website_history (website_id, status, status_code, response_time) VALUES ($1, $2, $3, $4) RETURNING *',
-			[website.rows[0].id, resp.status, resp.status_code, resp.response_time]
-		)
+		if (is_monitored) {
+			await db.query(
+				'INSERT INTO website_history (website_id, user_id, status, status_code, response_time) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+				[
+					website.rows[0].id,
+					user.id,
+					resp.status,
+					resp.status_code,
+					resp.response_time,
+				]
+			)
+		}
 
 		res.status(HttpStatusCode.CREATED).json({
 			success: true,
@@ -77,16 +86,19 @@ export const getWebsiteHandler = async (
 	next: NextFunction
 ) => {
 	try {
-		const { website_id } = req.params
+		const { id } = req.params
 
-		const website = await findWebsite(website_id)
+		const website = await db.query(
+			'SELECT id, name, url, downtime, availability, uptime, status, average_response_time, created_at, updated_at FROM websites WHERE id = $1',
+			[id]
+		)
 		if (!website.rows.length) {
 			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
 		}
 
 		res.status(HttpStatusCode.OK).json({
 			success: true,
-			message: 'Website found successfully',
+			message: 'Website fetched successfully',
 			data: website.rows.at(0),
 		})
 	} catch (error) {
@@ -104,17 +116,17 @@ export const updateWebsiteHandler = async (
 	next: NextFunction
 ) => {
 	try {
-		const { website_id } = req.params
+		const { id } = req.params
 		const { name } = req.body
 
-		const websiteExists = await findWebsite(website_id)
+		const websiteExists = await findWebsite(id)
 		if (!websiteExists.rows.length) {
 			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
 		}
 
 		const website = await db.query(
 			'UPDATE websites SET name = $1 WHERE id = $2 RETURNING *',
-			[name, website_id]
+			[name, id]
 		)
 
 		res.status(HttpStatusCode.OK).json({
@@ -133,17 +145,120 @@ export const deleteWebsiteHandler = async (
 	next: NextFunction
 ) => {
 	try {
-		const { website_id } = req.params
+		const { id } = req.params
 
-		const websiteExists = await findWebsite(website_id)
+		const websiteExists = await findWebsite(id)
 		if (!websiteExists.rows.length) {
 			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
 		}
 
-		await db.query('DELETE FROM websites WHERE id = $1', [website_id])
+		await db.query('DELETE FROM websites WHERE id = $1', [id])
 		return res.status(HttpStatusCode.OK).json({
 			success: true,
 			message: 'Website deleted successfully',
+		})
+	} catch (error) {
+		next(error)
+	}
+}
+
+export const getAuthenticatedUserWebsitesHandler = async (
+	req: Request<unknown, unknown, unknown, GetAllWebsitesInput>,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const { user } = res.locals.user
+		const { status, page } = req.query
+
+		const requested_page = Number(page) || 1
+		// TODO: add pagination with limit and offset
+		const websites = await db.query(
+			'SELECT * FROM websites WHERE user_id = $1 ORDER BY created_at DESC',
+			[user.id]
+		)
+
+		const total = websites.rowCount
+		const limit = 15
+
+		res.status(HttpStatusCode.OK).json({
+			success: true,
+			message: 'Websites fetched successfully',
+			data: websites.rows,
+			meta: {
+				total,
+				current_page: page,
+				per_page: limit,
+				// total_pages: Math.ceil(total / limit) || 1,
+				// has_next_page: page < Math.ceil(total / limit),
+				// has_prev_page: page > 1,
+				// next_page: page + 1,
+				// prev_page: page - 1 || 1,
+			},
+		})
+	} catch (error) {
+		next(error)
+	}
+}
+
+export const updateWebsiteStatusHandler = async (
+	req: Request<
+		UpdateWebsiteStatusInput['params'],
+		unknown,
+		UpdateWebsiteStatusInput['body']
+	>,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const { id } = req.params
+		const { is_monitored } = req.body
+
+		const websiteExists = await findWebsite(id)
+		if (!websiteExists.rows.length) {
+			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
+		}
+
+		const status = is_monitored ? 'monitored' : 'not-monitored'
+
+		const website = await db.query(
+			'UPDATE websites SET status = $1 WHERE id = $2 RETURNING *',
+			[status, id]
+		)
+
+		return res.status(HttpStatusCode.OK).json({
+			success: true,
+			message: 'Website status updated successfully',
+			data: website.rows.at(0),
+		})
+	} catch (error) {
+		next(error)
+	}
+}
+
+export const getWebsiteHistoryHandler = async (
+	req: Request<GetWebsiteInput>,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const { user } = res.locals.user
+		const { id } = req.params
+
+		const websiteExists = await findWebsite(id)
+		if (!websiteExists.rows.length) {
+			throw new ApiError('Website does not exist!', HttpStatusCode.NOT_FOUND)
+		}
+
+		const website_histories = await db.query(
+			'SELECT website_id, status, status_code, response_time, created_at, updated_at FROM website_history WHERE website_id = $1 AND user_id = $2 ORDER BY created_at DESC',
+			[id, user.id]
+		)
+
+		return res.status(HttpStatusCode.OK).json({
+			success: true,
+			message: 'Website history fetched successfully',
+			data: website_histories.rows,
 		})
 	} catch (error) {
 		next(error)
