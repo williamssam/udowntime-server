@@ -4,17 +4,11 @@ import { db } from '../../db'
 import { ApiError } from '../../exceptions/api-error'
 import { HttpStatusCode } from '../../types'
 import { IS_PROD } from '../../utils/constant'
-import {
-	signAccessJWT,
-	signRefreshJWT,
-	verifyAccessJWT,
-	verifyRefreshJWT,
-} from '../../utils/jwt'
+import { signAccessJWT } from '../../utils/jwt'
 import { hashPassword, verifyHashedPassword } from './user.methods'
 import type {
 	CreateUserInput,
 	LoginInput,
-	RefreshTokenInput,
 	UpdateUserInput,
 } from './user.schema'
 import type { UserDocument } from './user.type'
@@ -62,7 +56,7 @@ export const createUserHandler = async (
 			[email, username, hashedPassword]
 		)
 
-		const { refresh_token, password: user_password, ...rest } = user.rows.at(0)
+		const { password: user_password, ...rest } = user.rows.at(0)
 		res.status(HttpStatusCode.CREATED).json({
 			success: true,
 			message: 'User created successfully',
@@ -173,21 +167,8 @@ export const loginHandler = async (
 
 		// generate access token for the user
 		const access_token = signAccessJWT({ user: rest })
-		const refresh_token = signRefreshJWT({ user_id: rest?.id })
-
-		await db.query('UPDATE users SET refresh_token = $1 WHERE email = $2', [
-			refresh_token,
-			email,
-		])
-
 		res.cookie('udowntime-access-token', access_token, {
 			maxAge: 900_000, // 15mins
-			httpOnly: IS_PROD,
-			sameSite: 'strict',
-			secure: IS_PROD,
-		})
-		res.cookie('udowntime-refresh-token', refresh_token, {
-			maxAge: 6.048e8, // 7days
 			httpOnly: IS_PROD,
 			sameSite: 'strict',
 			secure: IS_PROD,
@@ -199,7 +180,6 @@ export const loginHandler = async (
 			data: {
 				user: rest,
 				access_token,
-				refresh_token,
 			},
 		})
 	} catch (error) {
@@ -207,88 +187,6 @@ export const loginHandler = async (
 	}
 }
 
-// FIXME: check this later
-export const refreshTokenHandler = async (
-	req: Request<unknown, unknown, unknown, RefreshTokenInput>,
-	res: Response,
-	next: NextFunction
-) => {
-	try {
-		// const { user } = res.locals.user
-		const refresh_token =
-			req.cookies['udowntime-refresh-token'] ?? req.query.refresh_token
-		const access_token =
-			req.cookies['udowntime-access-token'] ??
-			req.headers.authorization?.split(' ')[1]
-
-		// check if access token is valid
-		const { is_valid } = await verifyAccessJWT(access_token, {
-			ignoreExpiration: true,
-		})
-		if (!is_valid) {
-			throw new ApiError('Invalid access token!', HttpStatusCode.BAD_REQUEST)
-		}
-
-		const {
-			is_valid: is_valid_refresh_token,
-			// @ts-expect-error
-			decoded: { user_id },
-		} = await verifyRefreshJWT(refresh_token)
-
-		if (!is_valid_refresh_token) {
-			throw new ApiError(
-				'Invalid or expired refresh token!',
-				HttpStatusCode.BAD_REQUEST
-			)
-		}
-
-		const user = await db.query<UserDocument>(
-			'SELECT refresh_token FROM users WHERE refresh_token = $1',
-			[refresh_token]
-		)
-		if (!user.rows.length) {
-			throw new ApiError(
-				'Invalid or expired refresh token!',
-				HttpStatusCode.UNAUTHORIZED
-			)
-		}
-
-		if (refresh_token !== user.rows.at(0)?.refresh_token) {
-			throw new ApiError(
-				'Invalid or expired refresh token!',
-				HttpStatusCode.UNAUTHORIZED
-			)
-		}
-
-		// @ts-expect-error
-		const { password: user_password, ...rest } = user.rows.at(0)
-		const new_access_token = signAccessJWT({ user: rest })
-		res.cookie('udowntime-access-token', access_token, {
-			maxAge: 900_000, // 15mins
-			httpOnly: IS_PROD,
-			sameSite: 'strict',
-			secure: IS_PROD,
-		})
-		res.cookie('udowntime-refresh-token', refresh_token, {
-			maxAge: 6.048e8, // 7days
-			httpOnly: IS_PROD,
-			sameSite: 'strict',
-			secure: IS_PROD,
-		})
-
-		res.status(HttpStatusCode.OK).json({
-			success: true,
-			message: 'Refreshed access token successfully!',
-			data: {
-				refresh_token,
-				access_token: new_access_token,
-				// refresh_expires_in: ,
-			},
-		})
-	} catch (error) {
-		next(error)
-	}
-}
 
 export const logoutHandler = async (
 	req: Request,
@@ -297,7 +195,6 @@ export const logoutHandler = async (
 ) => {
 	try {
 		res.clearCookie('udowntime-access-token')
-		res.clearCookie('udowntime-refresh-token')
 
 		res.status(HttpStatusCode.OK).json({
 			success: true,

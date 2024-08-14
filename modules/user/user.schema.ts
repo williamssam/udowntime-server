@@ -68,23 +68,12 @@ export const loginSchema = z.object({
 	}),
 })
 
-export const refreshTokenSchema = z.object({
-	query: z.object({
-		refresh_token: z
-			.string({
-				required_error: 'Refresh token is required',
-			})
-			.trim(),
-	}),
-})
-
 export type CreateUserInput = z.TypeOf<typeof createUserSchema>['body']
 export type VerifyUserInput = z.TypeOf<typeof verifyUserSchema>['body']
 export type ChangePasswordInput = z.TypeOf<typeof changePasswordSchema>['body']
 export type ForgotPasswordInput = z.TypeOf<typeof forgotPasswordSchema>['body']
 export type LoginInput = z.infer<typeof loginSchema>['body']
 export type UpdateUserInput = Omit<
-	z.TypeOf<typeof createUserSchema>['body'],
-	'password'
->
-export type RefreshTokenInput = z.TypeOf<typeof refreshTokenSchema>['query']
+		z.TypeOf<typeof createUserSchema>['body'],
+		'password'
+	>

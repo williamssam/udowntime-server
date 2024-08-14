@@ -17,8 +17,4 @@ export const config = {
 		key: process.env.ACCESS_TOKEN_KEY as string,
 		expires_in: '15m',
 	},
-	refresh_token: {
-		key: process.env.REFRESH_TOKEN_KEY as string,
-		expires_in: '7d',
-	},
 } as const

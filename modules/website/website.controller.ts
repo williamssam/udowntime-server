@@ -34,34 +34,20 @@ export const createWebsiteHandler = async (
 		}
 
 		const resp = await fetchWebsite(url)
-
-		const uptime = is_monitored && resp.ok ? 1 : 0
-		const downtime = is_monitored && !resp.ok ? 1 : 0
-		const availability = is_monitored ? (uptime / (uptime + downtime)) * 100 : 0
 		const status = is_monitored ? 'monitored' : 'not-monitored'
 
-		// FIXME: Calculate average response time
 		const average_response_time = 0
 
 		const website = await db.query(
-			'INSERT INTO websites (name, url, status, uptime, downtime, availability, average_response_time, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-			[
-				name,
-				url,
-				status,
-				uptime,
-				downtime,
-				availability,
-				average_response_time,
-				user.id,
-			]
+			'INSERT INTO websites (name, url, status, average_response_time, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING',
+			[name, url, status, average_response_time, user.id]
 		)
 
 		if (is_monitored) {
 			await db.query(
-				'INSERT INTO website_history (website_id, user_id, status, status_code, response_time) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+				'INSERT INTO website_history (website_id, user_id, status, status_code, response_time) VALUES ($1, $2, $3, $4, $5)',
 				[
-					website.rows[0].id,
+					website.rows.at(0).id,
 					user.id,
 					resp.status,
 					resp.status_code,
@@ -70,10 +56,16 @@ export const createWebsiteHandler = async (
 			)
 		}
 
+		// website is not updated after trigger function runs when website is monitored, so we need to fetch it again
+		const new_website = await db.query(
+			'SELECT id, name, url, downtime, availability, uptime, status, average_response_time, created_at, updated_at FROM websites WHERE id = $1',
+			[website.rows.at(0).id]
+		)
+
 		res.status(HttpStatusCode.CREATED).json({
 			success: true,
 			message: 'Website created successfully',
-			data: website.rows.at(0),
+			data: new_website.rows.at(0),
 		})
 	} catch (error) {
 		next(error)

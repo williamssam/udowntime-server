@@ -14,7 +14,7 @@ export const fetchWebsite = async (url: string) => {
 			status: resp.ok ? 'available' : 'unavailable',
 			response_time: response_time,
 			status_code: resp.status,
-		}
+		} as const
 	} catch (error) {
 		throw new ApiError(
 			'Failed to fetch website',

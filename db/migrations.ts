@@ -3,7 +3,6 @@ export const createUserTable = `CREATE TABLE IF NOT EXISTS users (
 	email VARCHAR UNIQUE NOT NULL,
 	username VARCHAR UNIQUE NOT NULL,
 	password VARCHAR NOT NULL,
-	refresh_token TEXT UNIQUE NULL,
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 )`
@@ -22,8 +21,6 @@ export const createWebsiteTable = `CREATE TABLE IF NOT EXISTS websites (
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 )`
 
-	// jwt_version INTEGER NOT NULL DEFAULT 0 CHECK (jwt_version >= 0), -- default value is 0, increment by 1 every time access token is refreshed, if version !== version passed, then access token has expired
-
 export const createWebsiteHistoryTable = `CREATE TABLE IF NOT EXISTS website_history (
 	id SERIAL PRIMARY KEY,
 	user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -34,3 +31,27 @@ export const createWebsiteHistoryTable = `CREATE TABLE IF NOT EXISTS website_his
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 )`
+
+export const createWebsiteTrigger = `
+CREATE OR REPLACE FUNCTION update_website_history()
+RETURNS TRIGGER
+AS $$
+BEGIN
+    IF NEW.status = 'available' THEN
+        UPDATE websites
+        SET uptime = uptime + 1,
+						availability = COALESCE((uptime / NULLIF((uptime + downtime), 0)) * 100,0)
+        WHERE id = NEW.website_id;
+    ELSIF NEW.status = 'unavailable' THEN
+        UPDATE websites
+        SET downtime = downtime + 1,
+						availability = COALESCE((uptime / NULLIF(uptime + downtime, 0)) * 100,0)
+        WHERE id = NEW.website_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+`
+
+export const triggerUpdateWebsite =
+	'CREATE OR REPLACE TRIGGER update_website_history_trigger AFTER INSERT OR UPDATE ON website_history FOR EACH ROW EXECUTE FUNCTION update_website_history();'

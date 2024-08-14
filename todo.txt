@@ -2,4 +2,26 @@ refresh token stuff
  - in refresh handler, check if the "is_valid" property from session table is true, then allow the user refresh their token and it is not i.e they have logout or login back (which will generate a new refresh token), inform them that their token has expired
  - if refresh token has expired, update "is_valid" to false
 
+## TODO
+- add pagination to websites and website history query
+
+
+
+CREATE OR REPLACE FUNCTION update_website_history()
+RETURNS TRIGGER
+AS $$
+BEGIN
+    IF NEW.status = 'available' THEN
+        UPDATE websites
+        SET uptime = uptime + 1
+        WHERE id = NEW.website_id;
+    ELSIF NEW.status = 'unavailable' THEN
+        UPDATE websites
+        SET downtime = downtime + 1
+        WHERE id = NEW.website_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
 

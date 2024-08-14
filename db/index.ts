@@ -4,6 +4,8 @@ import {
 	createUserTable,
 	createWebsiteHistoryTable,
 	createWebsiteTable,
+	createWebsiteTrigger,
+	triggerUpdateWebsite,
 } from './migrations'
 
 const { Pool } = pg
@@ -23,13 +25,15 @@ const runDBMigrations = async () => {
 		await client.query('BEGIN') // begin transaction
 
 		await client.query(createUserTable)
-		// await client.query(createSessionTable)
 		await client.query(createWebsiteTable)
 		await client.query(createWebsiteHistoryTable)
 
-		await client.query('COMMIT') // commit transactions
+		await client.query(createWebsiteTrigger)
+		await client.query(triggerUpdateWebsite)
 
+		await client.query('COMMIT') // commit transactions
 		console.log('END DB MIGRATION')
+
 	} catch (error) {
 		await client.query('ROLLBACK') // rollback transactions
 		console.error('DB migrations failed', error)
@@ -40,3 +44,4 @@ const runDBMigrations = async () => {
 }
 
 export { db, runDBMigrations }
+

@@ -9,13 +9,11 @@ import {
 	getCurrentUserHandler,
 	loginHandler,
 	logoutHandler,
-	refreshTokenHandler,
 } from './user.controller'
 import {
 	changePasswordSchema,
 	createUserSchema,
 	loginSchema,
-	refreshTokenSchema,
 } from './user.schema'
 
 export default (router: express.Router) => {
@@ -43,13 +41,6 @@ export default (router: express.Router) => {
 		`${config.api_url_prefix}/auth/login`,
 		[validateResource(loginSchema)],
 		loginHandler
-	)
-
-	// refresh token
-	router.get(
-		`${config.api_url_prefix}/auth/refresh`,
-		[validateResource(refreshTokenSchema)],
-		refreshTokenHandler
 	)
 
 	// logout user
