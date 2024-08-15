@@ -20,12 +20,12 @@ Udowntime is an automated downtime monitoring application with alerts and uptime
 ## Installation
 - Install libraries
 ```bash
-	pnpm i
+pnpm i
 ```
 
 - Start dev server
 ```bash
-	pnpm dev
+pnpm dev
 ```
 
 ## Usage
