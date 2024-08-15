@@ -1,6 +1,10 @@
 # Udowntime (Backend code)
 Udowntime is an automated downtime monitoring application with alerts and uptime reports.
 
+## Notes
+- Currently I am using simple cronjob which run every five minutes to check every website which last running time is (i.e 5 mins ago) in database.
+- User PostgreSQL triggers to update website table and insert new column to website_history table after cron job runs
+
 ## Requirements
 - Register and Login (authentication and authorization)
 - Add new website to monitor
@@ -31,7 +35,7 @@ pnpm dev
 ## Usage
 
 ### Base URL
-[Base url](http://localhost/api/v1/)
+http://localhost/api/v1/
 
 
 ### Authentication Endpoints
@@ -53,6 +57,9 @@ pnpm dev
 | Get website history 	|  **/website/history/:id** 	|  GET 	|  - 	|  page, status 	|
 | Delete website		|  **/website/:id** 	|  DELETE 	|  - 	|   	|
 
+
+## Todo
+- Add pagination to both websites and website history query
 
 ## Miscellaneous
 - run <code>node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</code> in your terminal to generate key for either access token
