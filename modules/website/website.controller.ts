@@ -12,6 +12,7 @@ import type {
 	UpdateWebsiteStatusInput,
 } from './website.schema'
 import { findWebsite } from './website.service'
+import type { Website } from './website.types'
 
 export const createWebsiteHandler = async (
 	req: Request<unknown, unknown, CreateWebsiteInput>,
@@ -35,11 +36,10 @@ export const createWebsiteHandler = async (
 
 		const resp = await fetchWebsite(url)
 		const status = is_monitored ? 'monitored' : 'not-monitored'
-
 		const average_response_time = 0
 
-		const website = await db.query(
-			'INSERT INTO websites (name, url, status, average_response_time, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING',
+		const website = await db.query<Website>(
+			'INSERT INTO websites (name, url, status, average_response_time, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
 			[name, url, status, average_response_time, user.id]
 		)
 
@@ -47,7 +47,7 @@ export const createWebsiteHandler = async (
 			await db.query(
 				'INSERT INTO website_history (website_id, user_id, status, status_code, response_time) VALUES ($1, $2, $3, $4, $5)',
 				[
-					website.rows.at(0).id,
+					website.rows.at(0)?.id,
 					user.id,
 					resp.status,
 					resp.status_code,
@@ -57,10 +57,9 @@ export const createWebsiteHandler = async (
 		}
 
 		// website is not updated after trigger function runs when website is monitored, so we need to fetch it again
-		const new_website = await db.query(
-			'SELECT id, name, url, downtime, availability, uptime, status, average_response_time, created_at, updated_at FROM websites WHERE id = $1',
-			[website.rows.at(0).id]
-		)
+		const new_website = await db.query('SELECT * FROM websites WHERE id = $1', [
+			website.rows.at(0)?.id,
+		])
 
 		res.status(HttpStatusCode.CREATED).json({
 			success: true,

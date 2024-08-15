@@ -1,24 +1,40 @@
 import { db } from '../db'
+import { sendEmail } from '../mail/mailer'
 import type { Website } from '../modules/website/website.types'
 import { fetchWebsite } from '../utils/fetch-website'
 
-const checkWebsite = async () => {
+export const checkWebsites = async () => {
 	const websites = await db.query<Website>(
-		'SELECT url, uptime, downtime FROM websites WHERE is_monitored = true'
+		'SELECT url, user_id, id, updated_at FROM websites WHERE status = $1',
+		['monitored']
 	)
+
 	if (!websites.rows.length) return
 
 	for (const website of websites.rows) {
 		try {
-			const resp = await fetchWebsite(website.url)
+			const user = await db.query('SELECT email FROM users WHERE id = $1', [
+				website.user_id,
+			])
 
+			const resp = await fetchWebsite(website.url)
 			await db.query(
-				'UPDATE website_history SET status = $1, status_code = $2, response_time = $3 WHERE website_id = $4',
-				[resp.status, resp.status_code, resp.response_time, website.id]
+				'INSERT INTO website_history (status, status_code, response_time, website_id, user_id) VALUES ($1, $2, $3, $4, $5)',
+				[
+					resp.status,
+					resp.status_code,
+					resp.response_time,
+					website.id,
+					website.user_id,
+				]
 			)
 
 			if (!resp.ok) {
-				// notify user of downtime here
+				await sendEmail({
+					receiver: user.rows.at(0).email,
+					subject: 'Website Unavailable',
+					message: `The website ${website.url} is currently down/unavailable as at ${new Date(website.updated_at).toLocaleString()}. Please check it.`,
+				})
 			}
 		} catch (error) {
 			console.error(error)

@@ -4,24 +4,3 @@ refresh token stuff
 
 ## TODO
 - add pagination to websites and website history query
-
-
-
-CREATE OR REPLACE FUNCTION update_website_history()
-RETURNS TRIGGER
-AS $$
-BEGIN
-    IF NEW.status = 'available' THEN
-        UPDATE websites
-        SET uptime = uptime + 1
-        WHERE id = NEW.website_id;
-    ELSIF NEW.status = 'unavailable' THEN
-        UPDATE websites
-        SET downtime = downtime + 1
-        WHERE id = NEW.website_id;
-    END IF;
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-

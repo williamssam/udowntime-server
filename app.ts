@@ -2,8 +2,10 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import 'dotenv/config'
 import express from 'express'
+import cron from 'node-cron'
 import { config } from './config'
 import { runDBMigrations } from './db'
+import { checkWebsites } from './jobs/check-website'
 import errorHandler from './middlewares/error-handler'
 import routes from './routes'
 import { corsOptions } from './utils/cors-options'
@@ -33,4 +35,10 @@ app.listen(config.port, async () => {
 	} catch (error) {
 		console.error('Error connecting to database', error)
 	}
+})
+
+// Run this job every day at midnight
+cron.schedule('* * * * *', () => {
+	console.log('Checking websites every minute...')
+	checkWebsites()
 })
