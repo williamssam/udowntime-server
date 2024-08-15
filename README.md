@@ -2,7 +2,7 @@
 Udowntime is an automated downtime monitoring application with alerts and uptime reports.
 
 ## Notes
-- Currently I am using simple cronjob which run every five minutes to check every website which last running time is (i.e 5 mins ago) in database.
+- Currently I am using simple cronjob which run every thirty (30) minutes to check every website which last running time is (i.e 5 mins ago) in database.
 - User PostgreSQL triggers to update website table and insert new column to website_history table after cron job runs
 
 ## Requirements

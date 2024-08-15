@@ -37,8 +37,8 @@ app.listen(config.port, async () => {
 	}
 })
 
-// Run this job every day at midnight
-cron.schedule('* * * * *', () => {
+// Run this job every five minute
+cron.schedule('*/30 * * * *', () => {
 	console.log('Checking websites every minute...')
 	checkWebsites()
 })
