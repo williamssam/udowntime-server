@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express'
 import { type AnyZodObject, ZodError } from 'zod'
 import { HttpStatusCode } from '../types'
+import { IS_DEV } from '../utils/constant'
 
 /**
  * Validates the resource using the provided schema.
@@ -19,6 +20,7 @@ export const validateResource =
 				const errorMessage = error.errors.map(err => ({
 					message: err.message,
 					path: err.path[1],
+					...(IS_DEV && { code: err.code }),
 				}))
 				return res.status(HttpStatusCode.BAD_REQUEST).json({
 					success: false,

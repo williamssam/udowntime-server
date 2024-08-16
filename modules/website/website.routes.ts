@@ -16,6 +16,7 @@ import {
 	createWebsiteSchema,
 	deleteWebsiteSchema,
 	getAllWebsitesSchema,
+	getWebsiteHistorySchema,
 	getWebsiteSchema,
 	updateWebsiteSchema,
 	updateWebsiteStatusSchema,
@@ -81,7 +82,7 @@ export default (router: express.Router) => {
 	 */
 	router.get(
 		`${config.api_url_prefix}/website/history/:id`,
-		[deserializeUser, requireUser, validateResource(getWebsiteSchema)],
+		[deserializeUser, requireUser, validateResource(getWebsiteHistorySchema)],
 		getWebsiteHistoryHandler
 	)
 }

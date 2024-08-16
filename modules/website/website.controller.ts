@@ -7,11 +7,16 @@ import type {
 	CreateWebsiteInput,
 	DeleteWebsiteInput,
 	GetAllWebsitesInput,
+	GetWebsiteHistoryInput,
 	GetWebsiteInput,
 	UpdateWebsiteInput,
 	UpdateWebsiteStatusInput,
 } from './website.schema'
-import { findWebsite } from './website.service'
+import {
+	findWebsite,
+	getTotalWebsiteHistory,
+	getTotalWebsites,
+} from './website.service'
 import type { Website } from './website.types'
 
 export const createWebsiteHandler = async (
@@ -160,31 +165,28 @@ export const getAuthenticatedUserWebsitesHandler = async (
 ) => {
 	try {
 		const { user } = res.locals.user
-		const { status, page } = req.query
+		const { status: requested_status, page: requested_page } = req.query
 
-		const requested_page = Number(page) || 1
-		// TODO: add pagination with limit and offset
-		const websites = await db.query(
-			'SELECT * FROM websites WHERE user_id = $1 ORDER BY created_at DESC',
-			[user.id]
-		)
-
-		const total = websites.rowCount
 		const limit = 15
+		const page = Number(requested_page) || 1
+		const status = requested_status ?? null
+
+		const websites = await db.query(
+			'SELECT * FROM websites WHERE user_id = $1 AND (cast($2 AS TEXT) IS NULL or status = $2) ORDER BY created_at DESC LIMIT $3 OFFSET ($4 - 1) * $3',
+			[user.id, status, limit, page]
+		)
+		const total_pages = await getTotalWebsites()
 
 		res.status(HttpStatusCode.OK).json({
 			success: true,
-			message: 'Websites fetched successfully',
+			message: 'Websites fetched successfully!',
 			data: websites.rows,
 			meta: {
-				total,
 				current_page: page,
 				per_page: limit,
-				// total_pages: Math.ceil(total / limit) || 1,
-				// has_next_page: page < Math.ceil(total / limit),
-				// has_prev_page: page > 1,
-				// next_page: page + 1,
-				// prev_page: page - 1 || 1,
+				total_pages,
+				has_next_page: page < total_pages,
+				has_prev_page: page > 1,
 			},
 		})
 	} catch (error) {
@@ -228,28 +230,46 @@ export const updateWebsiteStatusHandler = async (
 }
 
 export const getWebsiteHistoryHandler = async (
-	req: Request<GetWebsiteInput>,
+	req: Request<
+		GetWebsiteHistoryInput['params'],
+		unknown,
+		unknown,
+		GetWebsiteHistoryInput['query']
+	>,
 	res: Response,
 	next: NextFunction
 ) => {
 	try {
 		const { user } = res.locals.user
 		const { id } = req.params
+		const { status: requested_status, page: requested_page } = req.query
 
 		const websiteExists = await findWebsite(id)
 		if (!websiteExists.rows.length) {
 			throw new ApiError('Website does not exist!', HttpStatusCode.NOT_FOUND)
 		}
 
+		const limit = 15
+		const page = Number(requested_page) || 1
+		const status = requested_status ?? null
+
 		const website_histories = await db.query(
-			'SELECT website_id, status, status_code, response_time, created_at, updated_at FROM website_history WHERE website_id = $1 AND user_id = $2 ORDER BY created_at DESC',
-			[id, user.id]
+			'SELECT website_id, status, status_code, response_time, created_at, updated_at FROM website_history WHERE website_id = $1 AND user_id = $2 AND (cast($3 AS TEXT) IS NULL or status = $3) ORDER BY created_at DESC LIMIT $4 OFFSET ($5 - 1) * $4',
+			[id, user.id, status, limit, page]
 		)
+		const total_pages = await getTotalWebsiteHistory(id, user.id)
 
 		return res.status(HttpStatusCode.OK).json({
 			success: true,
 			message: 'Website history fetched successfully',
 			data: website_histories.rows,
+			meta: {
+				current_page: page,
+				per_page: limit,
+				total_pages,
+				has_next_page: page < total_pages,
+				has_prev_page: page > 1,
+			},
 		})
 	} catch (error) {
 		next(error)
