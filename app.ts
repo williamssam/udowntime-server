@@ -21,7 +21,7 @@ app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// TODO: handle route not found errors
+// TODO: handle route does not exist errors
 app.use(routes())
 app.use(errorHandler)
 

@@ -17,7 +17,7 @@ import {
 	getTotalWebsiteHistory,
 	getTotalWebsites,
 } from './website.service'
-import type { Website } from './website.types'
+import type { Website, WebsiteReport } from './website.types'
 
 export const createWebsiteHandler = async (
 	req: Request<unknown, unknown, CreateWebsiteInput>,
@@ -41,11 +41,10 @@ export const createWebsiteHandler = async (
 
 		const resp = await fetchWebsite(url)
 		const status = is_monitored ? 'monitored' : 'not-monitored'
-		const average_response_time = 0
 
 		const website = await db.query<Website>(
-			'INSERT INTO websites (name, url, status, average_response_time, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-			[name, url, status, average_response_time, user.id]
+			'INSERT INTO websites (name, url, status, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
+			[name, url, status, user.id]
 		)
 
 		if (is_monitored) {
@@ -84,13 +83,15 @@ export const getWebsiteHandler = async (
 	try {
 		const { id } = req.params
 
+		const websiteExists = await findWebsite(id)
+		if (!websiteExists.rows.length) {
+			throw new ApiError('Website does not exist!', HttpStatusCode.NOT_FOUND)
+		}
+
 		const website = await db.query(
-			'SELECT id, name, url, downtime, availability, uptime, status, average_response_time, created_at, updated_at FROM websites WHERE id = $1',
+			'SELECT id, name, url, status, created_at, updated_at FROM websites WHERE id = $1',
 			[id]
 		)
-		if (!website.rows.length) {
-			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
-		}
 
 		res.status(HttpStatusCode.OK).json({
 			success: true,
@@ -117,7 +118,7 @@ export const updateWebsiteHandler = async (
 
 		const websiteExists = await findWebsite(id)
 		if (!websiteExists.rows.length) {
-			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
+			throw new ApiError('Website does not exist!', HttpStatusCode.NOT_FOUND)
 		}
 
 		const website = await db.query(
@@ -145,7 +146,7 @@ export const deleteWebsiteHandler = async (
 
 		const websiteExists = await findWebsite(id)
 		if (!websiteExists.rows.length) {
-			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
+			throw new ApiError('Website does not exist!', HttpStatusCode.NOT_FOUND)
 		}
 
 		await db.query('DELETE FROM websites WHERE id = $1', [id])
@@ -172,7 +173,8 @@ export const getAuthenticatedUserWebsitesHandler = async (
 		const status = requested_status ?? null
 
 		const websites = await db.query(
-			'SELECT * FROM websites WHERE user_id = $1 AND (cast($2 AS TEXT) IS NULL or status = $2) ORDER BY created_at DESC LIMIT $3 OFFSET ($4 - 1) * $3',
+			`
+			SELECT id, name, url, status, created_at, updated_at FROM websites WHERE user_id = $1 AND (cast($2 AS TEXT) IS NULL or status = $2) ORDER BY created_at DESC LIMIT $3 OFFSET ($4 - 1) * $3`,
 			[user.id, status, limit, page]
 		)
 		const total_pages = await getTotalWebsites()
@@ -209,7 +211,7 @@ export const updateWebsiteStatusHandler = async (
 
 		const websiteExists = await findWebsite(id)
 		if (!websiteExists.rows.length) {
-			throw new ApiError('Website not found!', HttpStatusCode.NOT_FOUND)
+			throw new ApiError('Website does not exist!', HttpStatusCode.NOT_FOUND)
 		}
 
 		const status = is_monitored ? 'monitored' : 'not-monitored'
@@ -269,6 +271,39 @@ export const getWebsiteHistoryHandler = async (
 				total_pages,
 				has_next_page: page < total_pages,
 				has_prev_page: page > 1,
+			},
+		})
+	} catch (error) {
+		next(error)
+	}
+}
+
+export const getWebsiteReportHandler = async (
+	req: Request<GetWebsiteInput>,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const { id } = req.params
+
+		const website = await findWebsite(id)
+		if (!website.rows.length) {
+			throw new ApiError('Website does not exist!', HttpStatusCode.NOT_FOUND)
+		}
+
+		const website_report = await db.query<WebsiteReport>(
+			'SELECT downtime, availability, uptime, (SELECT AVG(response_time)::NUMERIC(10,2) AS average_response_time FROM website_history WHERE website_id = $1) FROM websites WHERE id = $1',
+			[id]
+		)
+		const report = website_report.rows.at(0)
+		const total_website = await getTotalWebsites()
+
+		return res.status(HttpStatusCode.OK).json({
+			success: true,
+			message: 'Website report fetched successfully',
+			data: {
+				...report,
+				total_website,
 			},
 		})
 	} catch (error) {

@@ -9,6 +9,7 @@ import {
 	getAuthenticatedUserWebsitesHandler,
 	getWebsiteHandler,
 	getWebsiteHistoryHandler,
+	getWebsiteReportHandler,
 	updateWebsiteHandler,
 	updateWebsiteStatusHandler,
 } from './website.controller'
@@ -23,7 +24,7 @@ import {
 } from './website.schema'
 
 export default (router: express.Router) => {
-		/**
+	/**
 	 * @description get all current authenticated user websites
 	 */
 	router.get(
@@ -75,6 +76,15 @@ export default (router: express.Router) => {
 		`${config.api_url_prefix}/website/:id`,
 		[deserializeUser, requireUser, validateResource(deleteWebsiteSchema)],
 		deleteWebsiteHandler
+	)
+
+	/**
+	 * @description get website report
+	 */
+	router.get(
+		`${config.api_url_prefix}/website/report/:id`,
+		[deserializeUser, requireUser, validateResource(getWebsiteSchema)],
+		getWebsiteReportHandler
 	)
 
 	/**
