@@ -38,26 +38,30 @@ pnpm dev
 http://localhost/api/v1/
 
 
-### Authentication Endpoints
+### Authentication endpoints
 |  Name 	|  Path 	|  Method 	|  Query 	|   	|
 |---	|---	|---	|---	|---	|
 | Register  	|  **/auth/signup** 	|  POST 	|  - 	|   	|
 | Login 	|  **/auth/login** 	|  POST 	|  - 	|   	|
-| Change password 	|  **/auth/change-password** 	|  PUT 	|  - 	|   	|
-| Me 	|  **/auth/me** 	|  GET 	|  - 	|   	|
+| Me 	|  **/me** 	|  GET 	|  - 	|   	|
+| Logout 	|  **/auth/logout** 	|  POST 	|  - 	|   	|
 
-### Websites Endpoints
+### Websites endpoints
 |  Name 	|  Path 	|  Method 	|  Query 	|   	|
 |---	|---	|---	|---	|---	|
-| Get all website  	|  **/website** 	|  GET 	|  page, status 	|   	|
-| Get all website report  	|  **/website/report** 	|  GET 	|  page, status 	|   	|
+| Get all website  	|  **/websites** 	|  GET 	|  page, status 	|   	|
 | Add new website 	|  **/website** 	|  POST 	|  - 	|   	|
 | Update website 	|  **/website/:id** 	|  PUT 	|  - 	|   	|
 | Get website by id 	|  **/website/:id** 	|  GET 	|  - 	|   	|
 | Update website status 	|  **/website/status/:id** 	|  PATCH 	|  - 	|   	|
 | Get website history 	|  **/website/history/:id** 	|  GET 	|  - 	|  page, status 	|
-| Get website report 	|  **/website/history/report/:id** 	|  GET 	|  - 	|  	|
 | Delete website		|  **/website/:id** 	|  DELETE 	|  - 	|   	|
+
+### Website reporting endpoints
+|  Name 	|  Path 	|  Method 	|  Query 	|   	|
+|---	|---	|---	|---	|---	|
+| Get all website report  	|  **/websites/report** 	|  GET 	|  	|   	|
+| Get website report 	|  **/website/history/report/:id** 	|  GET 	|  - 	|  	|
 
 
 ## Todo

@@ -5,12 +5,8 @@ import { ApiError } from '../../exceptions/api-error'
 import { HttpStatusCode } from '../../types'
 import { IS_PROD } from '../../utils/constant'
 import { signAccessJWT } from '../../utils/jwt'
-import { hashPassword, verifyHashedPassword } from './user.methods'
-import type {
-	CreateUserInput,
-	LoginInput,
-	UpdateUserInput,
-} from './user.schema'
+import { verifyHashedPassword } from './user.methods'
+import type { CreateUserInput, LoginInput } from './user.schema'
 import type { UserDocument } from './user.type'
 
 export const createUserHandler = async (
@@ -67,55 +63,6 @@ export const createUserHandler = async (
 	}
 }
 
-export const changePasswordHandler = async (
-	req: Request,
-	res: Response,
-	next: NextFunction
-) => {
-	try {
-		const user = res.locals.user
-		const { old_password, new_password } = req.body
-
-		const password_hash = user.password
-		const isValidPassword = await verifyHashedPassword(
-			old_password,
-			password_hash
-		)
-		if (!isValidPassword) {
-			throw new ApiError(
-				'Old password is not correct',
-				HttpStatusCode.BAD_REQUEST
-			)
-		}
-
-		const hashedPassword = await hashPassword(new_password)
-		await db.query('UPDATE users SET password = $1 WHERE id = $2', [
-			hashedPassword,
-			user.id,
-		])
-
-		res.status(HttpStatusCode.OK).json({
-			success: true,
-			message: 'Password changed successfully',
-		})
-	} catch (error) {
-		next(error)
-	}
-}
-
-// TODO: update user not complete
-const updateUserHandler = async (
-	req: Request<unknown, unknown, UpdateUserInput>,
-	res: Response,
-	next: NextFunction
-) => {
-	try {
-		const { email, username } = req.body
-	} catch (error) {
-		next(error)
-	}
-}
-
 export const getCurrentUserHandler = async (
 	req: Request,
 	res: Response,
@@ -162,6 +109,7 @@ export const loginHandler = async (
 			)
 		}
 
+		res.clearCookie('udowntime-access-token')
 		// @ts-expect-error
 		const { password: user_password, ...rest } = user.rows.at(0)
 
@@ -186,7 +134,6 @@ export const loginHandler = async (
 		next(error)
 	}
 }
-
 
 export const logoutHandler = async (
 	req: Request,

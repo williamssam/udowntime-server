@@ -35,7 +35,7 @@ export default (router: express.Router) => {
 	)
 
 	/**
-	 * @description get website report
+	 * @description get all website report
 	 */
 	router.get(
 		`${config.api_url_prefix}/websites/report`,
@@ -98,7 +98,7 @@ export default (router: express.Router) => {
 	)
 
 	/**
-	 * @description get website report
+	 * @description get single website report
 	 */
 	router.get(
 		`${config.api_url_prefix}/website/history/report/:id`,
