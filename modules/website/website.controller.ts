@@ -159,7 +159,7 @@ export const deleteWebsiteHandler = async (
 	}
 }
 
-export const getAuthenticatedUserWebsitesHandler = async (
+export const getAllWebsiteHandler = async (
 	req: Request<unknown, unknown, unknown, GetAllWebsitesInput>,
 	res: Response,
 	next: NextFunction
@@ -177,17 +177,17 @@ export const getAuthenticatedUserWebsitesHandler = async (
 			SELECT id, name, url, status, created_at, updated_at FROM websites WHERE user_id = $1 AND (cast($2 AS TEXT) IS NULL or status = $2) ORDER BY created_at DESC LIMIT $3 OFFSET ($4 - 1) * $3`,
 			[user.id, status, limit, page]
 		)
-		const total_pages = await getTotalWebsites()
+		const total = await getTotalWebsites()
 
 		res.status(HttpStatusCode.OK).json({
 			success: true,
 			message: 'Websites fetched successfully!',
 			data: websites.rows,
 			meta: {
+				total,
 				current_page: page,
 				per_page: limit,
-				total_pages,
-				has_next_page: page < total_pages,
+				has_next_page: page < total,
 				has_prev_page: page > 1,
 			},
 		})
@@ -259,18 +259,42 @@ export const getWebsiteHistoryHandler = async (
 			'SELECT website_id, status, status_code, response_time, created_at, updated_at FROM website_history WHERE website_id = $1 AND user_id = $2 AND (cast($3 AS TEXT) IS NULL or status = $3) ORDER BY created_at DESC LIMIT $4 OFFSET ($5 - 1) * $4',
 			[id, user.id, status, limit, page]
 		)
-		const total_pages = await getTotalWebsiteHistory(id, user.id)
+		const total = await getTotalWebsiteHistory(id, user.id)
 
 		return res.status(HttpStatusCode.OK).json({
 			success: true,
 			message: 'Website history fetched successfully',
 			data: website_histories.rows,
 			meta: {
+				total,
 				current_page: page,
 				per_page: limit,
-				total_pages,
-				has_next_page: page < total_pages,
+				has_next_page: page < total,
 				has_prev_page: page > 1,
+			},
+		})
+	} catch (error) {
+		next(error)
+	}
+}
+
+export const getAllWebsiteReportHandler = async (
+	req: Request,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const total_website = await getTotalWebsites()
+		const total_monitored = await getTotalWebsites('monitored')
+		const total_unmonitored = await getTotalWebsites('not-monitored')
+
+		return res.status(HttpStatusCode.OK).json({
+			success: true,
+			message: 'Website report fetched successfully',
+			data: {
+				total_website,
+				total_monitored,
+				total_unmonitored,
 			},
 		})
 	} catch (error) {
@@ -296,15 +320,11 @@ export const getWebsiteReportHandler = async (
 			[id]
 		)
 		const report = website_report.rows.at(0)
-		const total_website = await getTotalWebsites()
 
 		return res.status(HttpStatusCode.OK).json({
 			success: true,
-			message: 'Website report fetched successfully',
-			data: {
-				...report,
-				total_website,
-			},
+			message: 'Website history report fetched successfully',
+			data: report,
 		})
 	} catch (error) {
 		next(error)

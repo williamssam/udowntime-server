@@ -36,14 +36,13 @@ export const updateWebsiteSchema = z.object({
 export const deleteWebsiteSchema = z.object({ ...params })
 export const getWebsiteSchema = z.object({ ...params })
 
-const website_history_status = ['available', 'unavailable']
 export const getAllWebsitesSchema = z.object({
 	query: z.object({
 		page: z.coerce
 			.string({
 				required_error: 'Page is required',
 			})
-			.catch('1')
+			.default('1')
 			.refine(val => !Number.isNaN(+val), {
 				message: 'Page must be a number',
 			}),
@@ -63,7 +62,7 @@ export const getWebsiteHistorySchema = z.object({
 			.string({
 				required_error: 'Page is required',
 			})
-			.catch('1')
+			.default('1')
 			.refine(val => !Number.isNaN(+val), {
 				message: 'Page must be a number',
 			}),

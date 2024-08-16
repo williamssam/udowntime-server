@@ -50,11 +50,13 @@ http://localhost/api/v1/
 |  Name 	|  Path 	|  Method 	|  Query 	|   	|
 |---	|---	|---	|---	|---	|
 | Get all website  	|  **/website** 	|  GET 	|  page, status 	|   	|
+| Get all website report  	|  **/website/report** 	|  GET 	|  page, status 	|   	|
 | Add new website 	|  **/website** 	|  POST 	|  - 	|   	|
 | Update website 	|  **/website/:id** 	|  PUT 	|  - 	|   	|
 | Get website by id 	|  **/website/:id** 	|  GET 	|  - 	|   	|
 | Update website status 	|  **/website/status/:id** 	|  PATCH 	|  - 	|   	|
 | Get website history 	|  **/website/history/:id** 	|  GET 	|  - 	|  page, status 	|
+| Get website report 	|  **/website/history/report/:id** 	|  GET 	|  - 	|  	|
 | Delete website		|  **/website/:id** 	|  DELETE 	|  - 	|   	|
 
 

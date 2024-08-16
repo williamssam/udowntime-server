@@ -6,7 +6,8 @@ import { validateResource } from '../../middlewares/validate-resource'
 import {
 	createWebsiteHandler,
 	deleteWebsiteHandler,
-	getAuthenticatedUserWebsitesHandler,
+	getAllWebsiteHandler,
+	getAllWebsiteReportHandler,
 	getWebsiteHandler,
 	getWebsiteHistoryHandler,
 	getWebsiteReportHandler,
@@ -28,9 +29,18 @@ export default (router: express.Router) => {
 	 * @description get all current authenticated user websites
 	 */
 	router.get(
-		`${config.api_url_prefix}/website`,
+		`${config.api_url_prefix}/websites`,
 		[deserializeUser, requireUser, validateResource(getAllWebsitesSchema)],
-		getAuthenticatedUserWebsitesHandler
+		getAllWebsiteHandler
+	)
+
+	/**
+	 * @description get website report
+	 */
+	router.get(
+		`${config.api_url_prefix}/websites/report`,
+		[deserializeUser, requireUser],
+		getAllWebsiteReportHandler
 	)
 
 	/**
@@ -79,20 +89,20 @@ export default (router: express.Router) => {
 	)
 
 	/**
-	 * @description get website report
-	 */
-	router.get(
-		`${config.api_url_prefix}/website/report/:id`,
-		[deserializeUser, requireUser, validateResource(getWebsiteSchema)],
-		getWebsiteReportHandler
-	)
-
-	/**
 	 * @description get website history
 	 */
 	router.get(
 		`${config.api_url_prefix}/website/history/:id`,
 		[deserializeUser, requireUser, validateResource(getWebsiteHistorySchema)],
 		getWebsiteHistoryHandler
+	)
+
+	/**
+	 * @description get website report
+	 */
+	router.get(
+		`${config.api_url_prefix}/website/history/report/:id`,
+		[deserializeUser, requireUser, validateResource(getWebsiteSchema)],
+		getWebsiteReportHandler
 	)
 }
