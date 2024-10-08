@@ -64,8 +64,5 @@ http://localhost/api/v1/
 | Get website report 	|  **/website/history/report/:id** 	|  GET 	|  - 	|  	|
 
 
-## Todo
-- Add pagination to both websites and website history query
-
 ## Miscellaneous
 - run <code>node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</code> in your terminal to generate key for either access token
